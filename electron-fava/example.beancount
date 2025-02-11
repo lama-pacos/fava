@@ -1,0 +1,16 @@
+; -*- mode: beancount -*-
+
+option "title" "My Ledger"
+option "operating_currency" "CNY"
+
+2024-01-01 open Assets:Bank:Checking CNY
+2024-01-01 open Expenses:Food CNY
+2024-01-01 open Income:Salary CNY
+
+2024-02-01 * "Initial Balance"
+  Assets:Bank:Checking    10000.00 CNY
+  Income:Salary         -10000.00 CNY
+
+2024-02-10 * "Lunch"
+  Assets:Bank:Checking    -50.00 CNY
+  Expenses:Food           50.00 CNY

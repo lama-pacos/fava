@@ -25,3 +25,13 @@ node_modules
 .env
 TODO
 npm-debug.log
+.history/
+.venv/
+
+# Electron specific
+electron-fava/dist/
+electron-fava/build/
+electron-fava/node_modules/
+electron-fava/venv/
+electron-fava/.DS_Store
+electron-fava/yarn.lock
