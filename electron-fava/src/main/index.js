@@ -1,27 +1,17 @@
 const { app, dialog } = require('electron');
 const logger = require('../common/logger');
 const { createWindow, getMainWindow } = require('./window');
-const { startFavaServer, stopFavaServer, checkServerAvailable, isServerStarted } = require('./fava-server');
+const { startFavaServer, stopFavaServer, isServerStarted } = require('./fava-server');
 
 app.on('ready', async () => {
   logger.info('App is ready');
+  
+  // 先启动 Fava 服务器
   startFavaServer();
+  logger.info('Fava server starting...');
   
-  logger.info('Creating window first...');
-  createWindow();
-  
-  logger.info('Waiting for Fava server to start...');
-  const serverAvailable = await checkServerAvailable();
-  logger.info(`Server availability check result: ${serverAvailable}`);
-  
-  if (!serverAvailable) {
-    dialog.showMessageBox(getMainWindow(), {
-      type: 'warning',
-      title: 'Server Connection Issue',
-      message: 'Could not connect to Fava server. The application may not work correctly.',
-      buttons: ['OK']
-    });
-  }
+  // 创建窗口（现在包含了等待服务器就绪的逻辑）
+  await createWindow();
 });
 
 app.on('window-all-closed', function () {
@@ -30,9 +20,9 @@ app.on('window-all-closed', function () {
   }
 });
 
-app.on('activate', function () {
+app.on('activate', async function () {
   if (getMainWindow() === null && isServerStarted()) {
-    createWindow();
+    await createWindow();
   }
 });
 

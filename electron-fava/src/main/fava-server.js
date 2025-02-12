@@ -1,54 +1,24 @@
 const isDev = require('electron-is-dev');
-const path = require('path');
 const { spawn } = require('child_process');
 const http = require('http');
 const fs = require('fs');
 const logger = require('../common/logger');
+const paths = require('../config/paths');
+const serverConfig = require('../config/server');
 
 let pythonProcess;
 let serverStarted = false;
 
-// 获取可执行文件路径
-function getPythonExecutablePath() {
-  if (isDev) {
-    return path.join(__dirname, '../../venv/bin/python');
-  }
-  // 在生产环境中，使用打包的可执行文件
-  if (process.platform === 'darwin') {
-    return path.join(process.resourcesPath, 'fava_launcher');
-  }
-  throw new Error('Unsupported platform');
-}
-
-// 获取工作目录
-function getWorkingDirectory() {
-  if (isDev) {
-    return path.join(__dirname, '../..');
-  }
-  // 在生产环境中，使用资源目录
-  return process.resourcesPath;
-}
-
-// 获取 beancount 文件路径
-function getBeanPath() {
-  if (isDev) {
-    return path.join(__dirname, '../../example.beancount');
-  }
-  // 在生产环境中，使用资源目录中的示例文件
-  return path.join(process.resourcesPath, 'example.beancount');
-}
-
 // 检查服务是否可用
 function checkServerAvailable() {
   return new Promise((resolve) => {
-    const maxAttempts = 20; // 最多等待20秒
     let attempts = 0;
     let checkInterval;
     
     const checkServer = () => {
-      logger.info(`Attempting to connect to Fava server (attempt ${attempts + 1}/${maxAttempts})...`);
+      logger.info(`Attempting to connect to Fava server (attempt ${attempts + 1}/${serverConfig.maxRetries})...`);
       
-      const req = http.get('http://127.0.0.1:5000/my-ledger/', (response) => {
+      const req = http.get(serverConfig.url, (response) => {
         logger.info(`Received response from server with status code: ${response.statusCode}`);
         if (response.statusCode === 200 || response.statusCode === 302) {
           if (checkInterval) {
@@ -65,7 +35,7 @@ function checkServerAvailable() {
         tryAgain();
       });
 
-      req.setTimeout(500, () => {
+      req.setTimeout(serverConfig.timeout, () => {
         logger.warn('Connection attempt timed out');
         req.destroy();
         tryAgain();
@@ -74,8 +44,8 @@ function checkServerAvailable() {
 
     const tryAgain = () => {
       attempts++;
-      if (attempts < maxAttempts) {
-        logger.info('Waiting 500ms before next attempt...');
+      if (attempts < serverConfig.maxRetries) {
+        logger.info(`Waiting ${serverConfig.retryInterval}ms before next attempt...`);
       } else {
         logger.warn('Max attempts reached, proceeding anyway...');
         if (checkInterval) {
@@ -86,8 +56,8 @@ function checkServerAvailable() {
     };
 
     checkServer();
-    // 每500ms尝试一次
-    checkInterval = setInterval(checkServer, 500);
+    // 定期尝试连接
+    checkInterval = setInterval(checkServer, serverConfig.retryInterval);
   });
 }
 
@@ -98,14 +68,10 @@ function startFavaServer() {
     return;
   }
 
-  const executablePath = getPythonExecutablePath();
-  const workingDir = getWorkingDirectory();
-  const beanPath = getBeanPath();
-  
   logger.info('Starting Fava with:');
-  logger.info('- Executable:', executablePath);
-  logger.info('- Working directory:', workingDir);
-  logger.info('- Bean file:', beanPath);
+  logger.info('- Executable:', paths.python);
+  logger.info('- Working directory:', paths.root);
+  logger.info('- Bean file:', paths.beancount);
 
   const env = {
     ...process.env,
@@ -114,54 +80,56 @@ function startFavaServer() {
 
   // 设置 PYTHONPATH
   if (isDev) {
-    env.PYTHONPATH = path.join(workingDir, '..');
-    env.PATH = `${path.join(workingDir, 'venv/bin')}:${env.PATH}`;
+    env.PYTHONPATH = paths.pythonPath;
+    env.PATH = `${paths.venvBin}:${env.PATH}`;
   } else {
-    env.PYTHONPATH = process.resourcesPath;
+    env.PYTHONPATH = paths.pythonPath;
   }
-
-  const launcherScript = isDev ? path.join(workingDir, 'fava_launcher.py') : path.join(process.resourcesPath, 'fava_launcher');
   
   // 详细的调试信息
   logger.debug('Debug info:');
   logger.debug('- Is Dev:', isDev);
-  logger.debug('- Working dir:', workingDir);
-  logger.debug('- Launcher script:', launcherScript);
-  logger.debug('- Bean file:', beanPath);
+  logger.debug('- Working dir:', paths.root);
+  logger.debug('- Launcher script:', paths.launcher);
+  logger.debug('- Bean file:', paths.beancount);
   logger.debug('- PYTHONPATH:', env.PYTHONPATH);
 
   // 检查文件是否存在
   try {
-    if (fs.existsSync(launcherScript)) {
+    if (fs.existsSync(paths.launcher)) {
       logger.info('Launcher script exists');
       // 检查文件权限
-      const stats = fs.statSync(launcherScript);
+      const stats = fs.statSync(paths.launcher);
       logger.debug('Launcher script permissions:', stats.mode.toString(8));
       if (!isDev) {
         // 确保文件有执行权限
-        fs.chmodSync(launcherScript, '755');
+        fs.chmodSync(paths.launcher, '755');
         logger.info('Set launcher script as executable');
       }
     } else {
-      logger.error('Launcher script does not exist:', launcherScript);
-      throw new Error(`Launcher script not found: ${launcherScript}`);
+      logger.error('Launcher script does not exist:', paths.launcher);
+      throw new Error(`Launcher script not found: ${paths.launcher}`);
     }
-    if (fs.existsSync(beanPath)) {
+    if (fs.existsSync(paths.beancount)) {
       logger.info('Bean file exists');
     } else {
-      logger.error('Bean file does not exist:', beanPath);
-      throw new Error(`Bean file not found: ${beanPath}`);
+      logger.error('Bean file does not exist:', paths.beancount);
+      throw new Error(`Bean file not found: ${paths.beancount}`);
     }
   } catch (err) {
     logger.error('Error checking files:', err);
     throw err;
   }
 
-  pythonProcess = spawn(isDev ? executablePath : launcherScript, isDev ? [launcherScript, beanPath] : [beanPath], {
-    cwd: workingDir,
-    env: env,
-    shell: process.platform === 'win32'
-  });
+  pythonProcess = spawn(
+    isDev ? paths.python : paths.launcher,
+    isDev ? [paths.launcher, paths.beancount] : [paths.beancount],
+    {
+      cwd: paths.root,
+      env: env,
+      shell: process.platform === 'win32'
+    }
+  );
 
   pythonProcess.stdout.on('data', (data) => {
     const output = data.toString();
