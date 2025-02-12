@@ -94,20 +94,23 @@ function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
-    show: false,  // 先不显示
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false
     }
   });
 
-  mainWindow.loadURL('http://127.0.0.1:5000/my-ledger/');
+  // 立即显示窗口
+  mainWindow.show();
+  mainWindow.focus();
 
-  // 等待页面加载完成后再显示
-  mainWindow.webContents.on('did-finish-load', () => {
-    mainWindow.show();
-    mainWindow.focus();
-  });
+  // 显示加载中的状态
+  mainWindow.loadFile(path.join(__dirname, 'loading.html'));
+
+  // 等待一段时间后加载实际页面
+  setTimeout(() => {
+    mainWindow.loadURL('http://127.0.0.1:5000/my-ledger/');
+  }, 500);
 
   if (isDev) {
     mainWindow.webContents.openDevTools();
@@ -122,12 +125,12 @@ app.on('ready', async () => {
   console.log('App is ready');
   startFavaServer();
   
+  console.log('Creating window first...');
+  createWindow();
+  
   console.log('Waiting for Fava server to start...');
   const serverAvailable = await checkServerAvailable();
   console.log(`Server availability check result: ${serverAvailable}`);
-  
-  console.log('Creating window...');
-  createWindow();
   
   if (!serverAvailable) {
     dialog.showMessageBox(mainWindow, {

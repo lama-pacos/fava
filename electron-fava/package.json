@@ -3,9 +3,12 @@
   "version": "1.0.0",
   "description": "Electron app for Fava",
   "main": "main.js",
+  "engines": {
+    "node": ">=18"
+  },
   "scripts": {
-    "build": "node scripts/ensure-node18.js './build.sh'",
-    "dev": "node scripts/ensure-node18.js 'electron .'"
+    "build": "./build.sh",
+    "dev": "electron ."
   },
   "build": {
     "appId": "com.electron.fava",
