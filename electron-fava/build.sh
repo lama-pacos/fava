@@ -25,7 +25,11 @@ fi
 
 # 打包 Python 应用
 echo -e "${BLUE}Building Python application...${NC}"
-pyinstaller --clean --onefile fava_launcher.py
+# 找到 beancount 的安装路径
+BEANCOUNT_PATH=$(python3 -c "import beancount; print(beancount.__path__[0])")
+pyinstaller --clean --onefile \
+    --add-data "${BEANCOUNT_PATH}/VERSION:beancount" \
+    fava_launcher.py
 
 # 确保 Python 可执行文件有正确的权限
 echo -e "${BLUE}Setting executable permissions...${NC}"

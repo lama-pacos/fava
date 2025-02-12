@@ -5,7 +5,7 @@ a = Analysis(
     ['fava_launcher.py'],
     pathex=[],
     binaries=[],
-    datas=[],
+    datas=[('/Users/zhengxin/workspace/fava/electron-fava/venv/lib/python3.9/site-packages/beancount/VERSION', 'beancount')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
