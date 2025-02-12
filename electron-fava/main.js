@@ -12,7 +12,7 @@ let serverStarted = false;
 function checkServerAvailable() {
   return new Promise((resolve) => {
     const http = require('http');
-    const maxAttempts = 30; // 最多等待30秒
+    const maxAttempts = 20; // 最多等待20秒
     let attempts = 0;
     let checkInterval;
     
@@ -36,7 +36,7 @@ function checkServerAvailable() {
         tryAgain();
       });
 
-      req.setTimeout(1000, () => {
+      req.setTimeout(500, () => {
         console.log('Connection attempt timed out');
         req.destroy();
         tryAgain();
@@ -46,7 +46,7 @@ function checkServerAvailable() {
     const tryAgain = () => {
       attempts++;
       if (attempts < maxAttempts) {
-        console.log('Waiting 1 second before next attempt...');
+        console.log('Waiting 500ms before next attempt...');
       } else {
         console.log('Max attempts reached, proceeding anyway...');
         if (checkInterval) {
@@ -57,8 +57,8 @@ function checkServerAvailable() {
     };
 
     checkServer();
-    // 每秒尝试一次
-    checkInterval = setInterval(checkServer, 1000);
+    // 每500ms尝试一次
+    checkInterval = setInterval(checkServer, 500);
   });
 }
 
