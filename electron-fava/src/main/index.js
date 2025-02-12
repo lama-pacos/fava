@@ -37,5 +37,10 @@ app.on('activate', function () {
 });
 
 app.on('before-quit', () => {
+  // 先记录退出日志
+  logger.info('Application is quitting...');
+  // 关闭日志流
+  logger.closeLogStream();
+  // 停止服务器
   stopFavaServer();
 });

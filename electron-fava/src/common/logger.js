@@ -11,6 +11,7 @@ class Logger {
     }
     this.logFile = path.join(this.logDir, 'app.log');
     this.logStream = fs.createWriteStream(this.logFile, { flags: 'a' });
+    this.isClosed = false;
   }
 
   _formatMessage(level, ...args) {
@@ -21,6 +22,17 @@ class Logger {
   }
 
   _write(level, ...args) {
+    if (this.isClosed) {
+      // 如果日志流已关闭，只输出到控制台
+      const formattedMessage = this._formatMessage(level, ...args);
+      if (level === 'ERROR') {
+        console.error(formattedMessage);
+      } else {
+        console.log(formattedMessage);
+      }
+      return;
+    }
+
     const formattedMessage = this._formatMessage(level, ...args);
     // 写入日志文件
     this.logStream.write(formattedMessage + '\n');
@@ -50,7 +62,8 @@ class Logger {
 
   // 确保在应用退出时关闭日志流
   closeLogStream() {
-    if (this.logStream) {
+    if (!this.isClosed && this.logStream) {
+      this.isClosed = true;
       this.logStream.end();
     }
   }

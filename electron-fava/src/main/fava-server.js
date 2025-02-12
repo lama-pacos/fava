@@ -181,11 +181,17 @@ function startFavaServer() {
     throw error;
   });
 
-  pythonProcess.on('close', (code) => {
-    logger.info(`Fava process exited with code ${code}`);
+  pythonProcess.on('close', (code, signal) => {
     pythonProcess = null;
     serverStarted = false;
-    if (code !== 0) {
+    
+    // 如果是通过信号终止的（比如我们调用 kill()），不要抛出错误
+    if (signal) {
+      return;
+    }
+    
+    // 只有在进程异常退出时（退出码不为 0 且不为 null）才抛出错误
+    if (code !== 0 && code !== null) {
       throw new Error(`Fava process exited with code ${code}`);
     }
   });
@@ -196,7 +202,6 @@ function stopFavaServer() {
     pythonProcess.kill();
     pythonProcess = null;
     serverStarted = false;
-    logger.info('Fava server stopped');
   }
 }
 
