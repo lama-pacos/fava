@@ -3,6 +3,7 @@ const path = require('path');
 const { spawn } = require('child_process');
 const http = require('http');
 const fs = require('fs');
+const logger = require('../common/logger');
 
 let pythonProcess;
 let serverStarted = false;
@@ -45,10 +46,10 @@ function checkServerAvailable() {
     let checkInterval;
     
     const checkServer = () => {
-      console.log(`Attempting to connect to Fava server (attempt ${attempts + 1}/${maxAttempts})...`);
+      logger.info(`Attempting to connect to Fava server (attempt ${attempts + 1}/${maxAttempts})...`);
       
       const req = http.get('http://127.0.0.1:5000/my-ledger/', (response) => {
-        console.log(`Received response from server with status code: ${response.statusCode}`);
+        logger.info(`Received response from server with status code: ${response.statusCode}`);
         if (response.statusCode === 200 || response.statusCode === 302) {
           if (checkInterval) {
             clearInterval(checkInterval);
@@ -60,12 +61,12 @@ function checkServerAvailable() {
       });
 
       req.on('error', (err) => {
-        console.log(`Connection attempt failed: ${err.message}`);
+        logger.error(`Connection attempt failed: ${err.message}`);
         tryAgain();
       });
 
       req.setTimeout(500, () => {
-        console.log('Connection attempt timed out');
+        logger.warn('Connection attempt timed out');
         req.destroy();
         tryAgain();
       });
@@ -74,9 +75,9 @@ function checkServerAvailable() {
     const tryAgain = () => {
       attempts++;
       if (attempts < maxAttempts) {
-        console.log('Waiting 500ms before next attempt...');
+        logger.info('Waiting 500ms before next attempt...');
       } else {
-        console.log('Max attempts reached, proceeding anyway...');
+        logger.warn('Max attempts reached, proceeding anyway...');
         if (checkInterval) {
           clearInterval(checkInterval);
         }
@@ -93,7 +94,7 @@ function checkServerAvailable() {
 // 启动 Fava 服务器
 function startFavaServer() {
   if (pythonProcess) {
-    console.log('Fava server is already running');
+    logger.info('Fava server is already running');
     return;
   }
 
@@ -101,10 +102,10 @@ function startFavaServer() {
   const workingDir = getWorkingDirectory();
   const beanPath = getBeanPath();
   
-  console.log('Starting Fava with:');
-  console.log('- Executable:', executablePath);
-  console.log('- Working directory:', workingDir);
-  console.log('- Bean file:', beanPath);
+  logger.info('Starting Fava with:');
+  logger.info('- Executable:', executablePath);
+  logger.info('- Working directory:', workingDir);
+  logger.info('- Bean file:', beanPath);
 
   const env = {
     ...process.env,
@@ -122,37 +123,37 @@ function startFavaServer() {
   const launcherScript = isDev ? path.join(workingDir, 'fava_launcher.py') : path.join(process.resourcesPath, 'fava_launcher');
   
   // 详细的调试信息
-  console.log('Debug info:');
-  console.log('- Is Dev:', isDev);
-  console.log('- Working dir:', workingDir);
-  console.log('- Launcher script:', launcherScript);
-  console.log('- Bean file:', beanPath);
-  console.log('- PYTHONPATH:', env.PYTHONPATH);
+  logger.debug('Debug info:');
+  logger.debug('- Is Dev:', isDev);
+  logger.debug('- Working dir:', workingDir);
+  logger.debug('- Launcher script:', launcherScript);
+  logger.debug('- Bean file:', beanPath);
+  logger.debug('- PYTHONPATH:', env.PYTHONPATH);
 
   // 检查文件是否存在
   try {
     if (fs.existsSync(launcherScript)) {
-      console.log('Launcher script exists');
+      logger.info('Launcher script exists');
       // 检查文件权限
       const stats = fs.statSync(launcherScript);
-      console.log('Launcher script permissions:', stats.mode.toString(8));
+      logger.debug('Launcher script permissions:', stats.mode.toString(8));
       if (!isDev) {
         // 确保文件有执行权限
         fs.chmodSync(launcherScript, '755');
-        console.log('Set launcher script as executable');
+        logger.info('Set launcher script as executable');
       }
     } else {
-      console.error('Launcher script does not exist:', launcherScript);
+      logger.error('Launcher script does not exist:', launcherScript);
       throw new Error(`Launcher script not found: ${launcherScript}`);
     }
     if (fs.existsSync(beanPath)) {
-      console.log('Bean file exists');
+      logger.info('Bean file exists');
     } else {
-      console.error('Bean file does not exist:', beanPath);
+      logger.error('Bean file does not exist:', beanPath);
       throw new Error(`Bean file not found: ${beanPath}`);
     }
   } catch (err) {
-    console.error('Error checking files:', err);
+    logger.error('Error checking files:', err);
     throw err;
   }
 
@@ -164,24 +165,24 @@ function startFavaServer() {
 
   pythonProcess.stdout.on('data', (data) => {
     const output = data.toString();
-    console.log(`Fava stdout: ${output}`);
+    logger.info(`Fava stdout: ${output}`);
     if (output.includes('Running on http://')) {
-      console.log('Fava server started successfully');
+      logger.info('Fava server started successfully');
       serverStarted = true;
     }
   });
 
   pythonProcess.stderr.on('data', (data) => {
-    console.error(`Fava stderr: ${data}`);
+    logger.error(`Fava stderr: ${data}`);
   });
 
   pythonProcess.on('error', (error) => {
-    console.error('Failed to start Fava process:', error);
+    logger.error('Failed to start Fava process:', error);
     throw error;
   });
 
   pythonProcess.on('close', (code) => {
-    console.log(`Fava process exited with code ${code}`);
+    logger.info(`Fava process exited with code ${code}`);
     pythonProcess = null;
     serverStarted = false;
     if (code !== 0) {
@@ -195,6 +196,7 @@ function stopFavaServer() {
     pythonProcess.kill();
     pythonProcess = null;
     serverStarted = false;
+    logger.info('Fava server stopped');
   }
 }
 

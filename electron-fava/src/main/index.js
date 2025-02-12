@@ -1,18 +1,18 @@
 const { app, dialog } = require('electron');
-require('../common/logger');
+const logger = require('../common/logger');
 const { createWindow, getMainWindow } = require('./window');
 const { startFavaServer, stopFavaServer, checkServerAvailable, isServerStarted } = require('./fava-server');
 
 app.on('ready', async () => {
-  console.log('App is ready');
+  logger.info('App is ready');
   startFavaServer();
   
-  console.log('Creating window first...');
+  logger.info('Creating window first...');
   createWindow();
   
-  console.log('Waiting for Fava server to start...');
+  logger.info('Waiting for Fava server to start...');
   const serverAvailable = await checkServerAvailable();
-  console.log(`Server availability check result: ${serverAvailable}`);
+  logger.info(`Server availability check result: ${serverAvailable}`);
   
   if (!serverAvailable) {
     dialog.showMessageBox(getMainWindow(), {
