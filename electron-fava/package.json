@@ -11,6 +11,7 @@
   "build": {
     "appId": "com.electron.fava",
     "productName": "Fava",
+    "afterPack": "./after-pack.js",
     "mac": {
       "target": [
         "dmg"
@@ -21,8 +22,7 @@
     "extraResources": [
       {
         "from": "dist/fava_launcher",
-        "to": "fava_launcher",
-        "mode": "755"
+        "to": "fava_launcher"
       },
       {
         "from": "example.beancount",
