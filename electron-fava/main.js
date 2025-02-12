@@ -19,7 +19,7 @@ function checkServerAvailable() {
     const checkServer = () => {
       console.log(`Attempting to connect to Fava server (attempt ${attempts + 1}/${maxAttempts})...`);
       
-      const req = http.get('http://localhost:5000', (response) => {
+      const req = http.get('http://127.0.0.1:5000', (response) => {
         console.log(`Received response from server with status code: ${response.statusCode}`);
         if (response.statusCode === 200 || response.statusCode === 302) {
           if (checkInterval) {
@@ -101,7 +101,7 @@ function createWindow() {
     }
   });
 
-  mainWindow.loadURL('http://localhost:5000');
+  mainWindow.loadURL('http://127.0.0.1:5000');
 
   // 等待页面加载完成后再显示
   mainWindow.webContents.on('did-finish-load', () => {
@@ -202,7 +202,15 @@ function startFavaServer() {
     env.PATH = `${path.join(__dirname, 'venv/bin')}:${env.PATH}`;
   }
   
-  pythonProcess = spawn(executablePath, [isDev ? path.join(__dirname, 'fava_launcher.py') : '', getBeanPath()], {
+  const launcherScript = isDev ? path.join(__dirname, 'fava_launcher.py') : path.join(process.resourcesPath, 'fava_launcher');
+  console.log('Starting Fava with:');
+  console.log('- Python:', executablePath);
+  console.log('- Script:', launcherScript);
+  console.log('- Bean file:', getBeanPath());
+  console.log('- Working dir:', getWorkingDirectory());
+  console.log('- Environment:', env);
+
+  pythonProcess = spawn(executablePath, [launcherScript, getBeanPath()], {
     cwd: getWorkingDirectory(),
     env: env,
     shell: process.platform === 'win32'
@@ -211,7 +219,7 @@ function startFavaServer() {
   pythonProcess.stdout.on('data', (data) => {
     console.log(`Fava stdout: ${data}`);
     // 检查是否包含服务器启动成功的信息
-    if (data.toString().includes('Running on http://localhost:5000')) {
+    if (data.toString().includes('Running on http://127.0.0.1:5000')) {
       console.log('Fava server started successfully');
       serverStarted = true;
     }

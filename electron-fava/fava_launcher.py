@@ -26,7 +26,7 @@ def main():
     try:
         app = create_app([Path(beancount_file)])
         print("Successfully loaded beancount file")
-        app.run('localhost', 5000)
+        app.run('127.0.0.1', 5000)
     except Exception as e:
         print("Error starting Fava:", str(e))
         sys.exit(1)
