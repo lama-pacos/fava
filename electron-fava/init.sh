@@ -68,6 +68,12 @@ python -m pip install --upgrade pip
 echo -e "${BLUE}Installing Python dependencies...${NC}"
 pip install -r requirements.txt
 
+# 提示关于 regex 包的信息
+if [ "$ARCH" = "arm64" ]; then
+    echo -e "${YELLOW}Note: You may see an error about regex package architecture mismatch.${NC}"
+    echo -e "${YELLOW}This is normal on M1/M2 Macs and won't affect the application's functionality.${NC}"
+fi
+
 # 安装 Node.js 依赖
 echo -e "${BLUE}Installing Node.js dependencies...${NC}"
 yarn install
