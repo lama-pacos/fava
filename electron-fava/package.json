@@ -6,7 +6,7 @@
   "scripts": {
     "start": "electron .",
     "build": "chmod +x build.sh && ./build.sh",
-    "dev": "electron ."
+    "dev": "node scripts/dev.js"
   },
   "build": {
     "appId": "com.electron.fava",
