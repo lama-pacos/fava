@@ -9,7 +9,8 @@ const BASE_PATHS = {
     pythonPath: path.join(__dirname, '../../..'),
     venvBin: path.join(__dirname, '../../venv/bin'),
     launcher: path.join(__dirname, '../../fava_launcher.py'),
-    beancount: path.join(__dirname, '../../example.beancount'),
+    // beancount: path.join(__dirname, '../../example.beancount'),
+    beancount: path.resolve(__dirname, '../../../../../bookkeeping/main.bean'),
     loading: path.join(__dirname, '../../loading.html')
   },
   production: {
