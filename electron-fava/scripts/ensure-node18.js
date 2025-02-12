@@ -1,10 +1,6 @@
-const { execSync, spawn } = require('child_process');
+const { execSync } = require('child_process');
 
-function getCurrentNodeVersion() {
-    return process.version;
-}
-
-function switchToNode18() {
+function ensureNode18(scriptToRun) {
     try {
         // 检查是否安装了 nvm
         execSync('command -v nvm', { stdio: 'ignore' });
@@ -21,7 +17,7 @@ function switchToNode18() {
                     nvm install 18
                     nvm use 18
                 fi
-                exec node "${__filename}"
+                exec ${scriptToRun}
             `;
             
             // 使用 bash 执行 nvm 命令
@@ -35,22 +31,19 @@ function switchToNode18() {
         console.log('nvm not found, continuing with current Node version...');
     }
     
-    // 如果已经是 Node 18 或者没有 nvm，直接启动 Electron
-    startElectron();
-}
-
-function startElectron() {
-    console.log(`Starting Electron with Node ${process.version}`);
-    const electron = spawn('electron', ['.'], {
+    // 如果已经是 Node 18 或者没有 nvm，直接执行命令
+    execSync(scriptToRun, { 
         stdio: 'inherit',
         shell: true
     });
-    
-    electron.on('error', (err) => {
-        console.error('Failed to start Electron:', err);
-        process.exit(1);
-    });
 }
 
-// 开始执行
-switchToNode18();
+// 获取要执行的命令
+const scriptToRun = process.argv[2] || '';
+if (!scriptToRun) {
+    console.error('Please provide a script to run');
+    process.exit(1);
+}
+
+// 执行命令
+ensureNode18(scriptToRun);

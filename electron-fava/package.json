@@ -4,9 +4,8 @@
   "description": "Electron app for Fava",
   "main": "main.js",
   "scripts": {
-    "start": "electron .",
-    "build": "chmod +x build.sh && ./build.sh",
-    "dev": "node scripts/dev.js"
+    "build": "node scripts/ensure-node18.js './build.sh'",
+    "dev": "node scripts/ensure-node18.js 'electron .'"
   },
   "build": {
     "appId": "com.electron.fava",
