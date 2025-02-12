@@ -153,34 +153,45 @@ app.on('activate', function () {
 
 function startFavaServer() {
   const resourcesPath = isDev ? __dirname : process.resourcesPath;
-  const favaPath = isDev 
-    ? path.join(__dirname, 'venv/bin/fava')
-    : path.join(resourcesPath, 'fava');
+  const pythonPath = isDev 
+    ? path.join(__dirname, 'venv/bin/python')
+    : path.join(resourcesPath, 'python');
+  const launcherPath = isDev
+    ? path.join(__dirname, 'fava_launcher.py')
+    : path.join(resourcesPath, 'fava_launcher.py');
   const beanPath = isDev
     ? path.join(__dirname, 'example.beancount')
     : path.join(resourcesPath, 'example.beancount');
 
   console.log('Development mode:', isDev);
   console.log('Resources Path:', resourcesPath);
-  console.log('Fava Path:', favaPath);
+  console.log('Python Path:', pythonPath);
+  console.log('Launcher Path:', launcherPath);
   console.log('Bean Path:', beanPath);
   console.log('Working Directory:', isDev ? __dirname : resourcesPath);
 
   // Check if files exist
   try {
-    if (fs.existsSync(favaPath)) {
-      console.log('Fava executable exists');
-      const stats = fs.statSync(favaPath);
-      console.log('Fava executable stats:', stats);
+    if (fs.existsSync(pythonPath)) {
+      console.log('Python executable exists');
+      const stats = fs.statSync(pythonPath);
+      console.log('Python executable stats:', stats);
     } else {
-      console.error('Fava executable not found at:', favaPath);
+      console.error('Python executable not found at:', pythonPath);
       // List directory contents
-      if (fs.existsSync(resourcesPath)) {
-        console.log('Contents of resources directory:');
-        fs.readdirSync(resourcesPath).forEach(file => {
+      if (fs.existsSync(path.dirname(pythonPath))) {
+        console.log('Contents of python directory:');
+        fs.readdirSync(path.dirname(pythonPath)).forEach(file => {
           console.log(file);
         });
       }
+    }
+    if (fs.existsSync(launcherPath)) {
+      console.log('Launcher script exists');
+      const stats = fs.statSync(launcherPath);
+      console.log('Launcher script stats:', stats);
+    } else {
+      console.error('Launcher script not found at:', launcherPath);
     }
     if (fs.existsSync(beanPath)) {
       console.log('Beancount file exists');
@@ -201,10 +212,17 @@ function startFavaServer() {
     return;
   }
 
-  // 确保 fava 可执行文件存在
-  if (!fs.existsSync(favaPath)) {
-    console.error('Fava executable not found:', favaPath);
-    dialog.showErrorBox('Error', `Fava executable not found: ${favaPath}`);
+  // 确保 Python 可执行文件存在
+  if (!fs.existsSync(pythonPath)) {
+    console.error('Python executable not found:', pythonPath);
+    dialog.showErrorBox('Error', `Python executable not found: ${pythonPath}`);
+    return;
+  }
+
+  // 确保启动脚本存在
+  if (!fs.existsSync(launcherPath)) {
+    console.error('Launcher script not found:', launcherPath);
+    dialog.showErrorBox('Error', `Launcher script not found: ${launcherPath}`);
     return;
   }
 
@@ -215,25 +233,37 @@ function startFavaServer() {
     return;
   }
 
-  // 在生产环境中，确保 fava 可执行文件有执行权限
+  // 在生产环境中，确保 Python 可执行文件有执行权限
   if (!isDev) {
     try {
-      fs.chmodSync(favaPath, '755');
+      fs.chmodSync(pythonPath, '755');
     } catch (err) {
       console.error('Error setting executable permissions:', err);
     }
   }
   
-  pythonProcess = spawn(favaPath, [beanPath], {
+  // 设置环境变量
+  const env = {
+    ...process.env,
+    PYTHONPATH: path.join(__dirname, '..'),  // 添加父目录到 PYTHONPATH
+    PYTHONUNBUFFERED: '1',  // 禁用 Python 输出缓冲
+  };
+
+  // 在开发模式下，使用虚拟环境中的 Python
+  if (isDev) {
+    env.PATH = `${path.join(__dirname, 'venv/bin')}:${env.PATH}`;
+  }
+  
+  pythonProcess = spawn(pythonPath, [launcherPath, beanPath], {
     cwd: workingDir,
-    env: process.env,
+    env: env,
     shell: process.platform === 'win32'
   });
 
   pythonProcess.stdout.on('data', (data) => {
     console.log(`Fava stdout: ${data}`);
     // 检查是否包含服务器启动成功的信息
-    if (data.toString().includes('Running Fava on')) {
+    if (data.toString().includes('Running on http://localhost:5000')) {
       console.log('Fava server started successfully');
       serverStarted = true;
     }

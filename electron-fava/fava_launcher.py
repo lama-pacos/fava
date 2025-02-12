@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 import sys
 import os
-from fava.application import app
-from fava.application import load_file
+from fava.application import create_app
+from pathlib import Path
 
 def main():
     print("Starting Fava launcher...")
@@ -16,12 +16,15 @@ def main():
     beancount_file = sys.argv[1]
     print("Loading beancount file:", beancount_file)
     
+    # Convert to absolute path
+    beancount_file = os.path.abspath(beancount_file)
+    
     if not os.path.exists(beancount_file):
         print("Error: Beancount file not found:", beancount_file)
         sys.exit(1)
         
     try:
-        load_file(beancount_file)
+        app = create_app([Path(beancount_file)])
         print("Successfully loaded beancount file")
         app.run('localhost', 5000)
     except Exception as e:
