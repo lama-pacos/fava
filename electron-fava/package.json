@@ -2,7 +2,7 @@
   "name": "electron-fava",
   "version": "1.0.0",
   "description": "Electron app for Fava",
-  "main": "main.js",
+  "main": "src/main/index.js",
   "engines": {
     "node": ">=18"
   },
