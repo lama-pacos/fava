@@ -151,96 +151,44 @@ app.on('activate', function () {
   }
 });
 
+// 获取可执行文件路径
+function getPythonExecutablePath() {
+  if (isDev) {
+    return path.join(__dirname, 'venv/bin/python');
+  }
+  // 在生产环境中，使用打包的可执行文件
+  if (process.platform === 'darwin') {
+    return path.join(process.resourcesPath, 'fava_launcher');
+  }
+  throw new Error('Unsupported platform');
+}
+
+// 获取工作目录
+function getWorkingDirectory() {
+  if (isDev) {
+    return __dirname;
+  }
+  // 在生产环境中，使用资源目录
+  return process.resourcesPath;
+}
+
+// 获取 beancount 文件路径
+function getBeanPath() {
+  if (isDev) {
+    return path.join(__dirname, 'example.beancount');
+  }
+  // 在生产环境中，使用资源目录中的示例文件
+  return path.join(process.resourcesPath, 'example.beancount');
+}
+
+// 启动 Fava 服务器
 function startFavaServer() {
-  const resourcesPath = isDev ? __dirname : process.resourcesPath;
-  const pythonPath = isDev 
-    ? path.join(__dirname, 'venv/bin/python')
-    : path.join(resourcesPath, 'python');
-  const launcherPath = isDev
-    ? path.join(__dirname, 'fava_launcher.py')
-    : path.join(resourcesPath, 'fava_launcher.py');
-  const beanPath = isDev
-    ? path.join(__dirname, 'example.beancount')
-    : path.join(resourcesPath, 'example.beancount');
-
-  console.log('Development mode:', isDev);
-  console.log('Resources Path:', resourcesPath);
-  console.log('Python Path:', pythonPath);
-  console.log('Launcher Path:', launcherPath);
-  console.log('Bean Path:', beanPath);
-  console.log('Working Directory:', isDev ? __dirname : resourcesPath);
-
-  // Check if files exist
-  try {
-    if (fs.existsSync(pythonPath)) {
-      console.log('Python executable exists');
-      const stats = fs.statSync(pythonPath);
-      console.log('Python executable stats:', stats);
-    } else {
-      console.error('Python executable not found at:', pythonPath);
-      // List directory contents
-      if (fs.existsSync(path.dirname(pythonPath))) {
-        console.log('Contents of python directory:');
-        fs.readdirSync(path.dirname(pythonPath)).forEach(file => {
-          console.log(file);
-        });
-      }
-    }
-    if (fs.existsSync(launcherPath)) {
-      console.log('Launcher script exists');
-      const stats = fs.statSync(launcherPath);
-      console.log('Launcher script stats:', stats);
-    } else {
-      console.error('Launcher script not found at:', launcherPath);
-    }
-    if (fs.existsSync(beanPath)) {
-      console.log('Beancount file exists');
-      const stats = fs.statSync(beanPath);
-      console.log('Beancount file stats:', stats);
-    } else {
-      console.error('Beancount file not found at:', beanPath);
-    }
-  } catch (err) {
-    console.error('Error checking files:', err);
-  }
-
-  // 确保工作目录存在
-  const workingDir = isDev ? __dirname : resourcesPath;
-  if (!fs.existsSync(workingDir)) {
-    console.error('Working directory does not exist:', workingDir);
-    dialog.showErrorBox('Error', `Working directory does not exist: ${workingDir}`);
+  if (pythonProcess) {
+    console.log('Fava server is already running');
     return;
   }
 
-  // 确保 Python 可执行文件存在
-  if (!fs.existsSync(pythonPath)) {
-    console.error('Python executable not found:', pythonPath);
-    dialog.showErrorBox('Error', `Python executable not found: ${pythonPath}`);
-    return;
-  }
-
-  // 确保启动脚本存在
-  if (!fs.existsSync(launcherPath)) {
-    console.error('Launcher script not found:', launcherPath);
-    dialog.showErrorBox('Error', `Launcher script not found: ${launcherPath}`);
-    return;
-  }
-
-  // 确保 beancount 文件存在
-  if (!fs.existsSync(beanPath)) {
-    console.error('Beancount file not found:', beanPath);
-    dialog.showErrorBox('Error', `Beancount file not found: ${beanPath}`);
-    return;
-  }
-
-  // 在生产环境中，确保 Python 可执行文件有执行权限
-  if (!isDev) {
-    try {
-      fs.chmodSync(pythonPath, '755');
-    } catch (err) {
-      console.error('Error setting executable permissions:', err);
-    }
-  }
+  const executablePath = getPythonExecutablePath();
   
   // 设置环境变量
   const env = {
@@ -254,8 +202,8 @@ function startFavaServer() {
     env.PATH = `${path.join(__dirname, 'venv/bin')}:${env.PATH}`;
   }
   
-  pythonProcess = spawn(pythonPath, [launcherPath, beanPath], {
-    cwd: workingDir,
+  pythonProcess = spawn(executablePath, [isDev ? path.join(__dirname, 'fava_launcher.py') : '', getBeanPath()], {
+    cwd: getWorkingDirectory(),
     env: env,
     shell: process.platform === 'win32'
   });

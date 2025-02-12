@@ -5,25 +5,24 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "build": "electron-builder"
+    "build": "chmod +x build.sh && ./build.sh",
+    "dev": "electron ."
   },
   "build": {
     "appId": "com.electron.fava",
+    "productName": "Fava",
     "mac": {
       "target": [
-        "zip",
         "dmg"
       ],
-      "category": "public.app-category.finance"
+      "category": "public.app-category.finance",
+      "icon": "build/icon.icns"
     },
     "extraResources": [
       {
-        "from": "build/pyinstaller/fava",
-        "to": "fava"
-      },
-      {
-        "from": "build/pyinstaller/_internal",
-        "to": "_internal"
+        "from": "dist/fava_launcher",
+        "to": "fava_launcher",
+        "mode": "755"
       },
       {
         "from": "example.beancount",
@@ -42,7 +41,8 @@
       "!**/{.DS_Store,.git,.hg,.svn,CVS,RCS,SCCS,.gitignore,.gitattributes}",
       "!**/{__pycache__,thumbs.db,.flowconfig,.idea,.vs,.nyc_output}",
       "!**/{appveyor.yml,.travis.yml,circle.yml}",
-      "!**/{npm-debug.log,yarn.lock,.yarn-integrity,.yarn-metadata.json}"
+      "!**/{npm-debug.log,yarn.lock,.yarn-integrity,.yarn-metadata.json}",
+      "!{venv,build}/**/*"
     ]
   },
   "author": "",
