@@ -41,26 +41,28 @@ def main():
         if not os.path.exists(beancount_file):
             logging.error(f"Error: Beancount file not found: {beancount_file}")
             sys.exit(1)
-        
-        # 在导入 fava 之前，先设置 __version__
-        import fava
-        if not hasattr(fava, '__version__'):
-            logging.info("Setting fava.__version__")
-            fava.__version__ = '1.0.0'  # 使用一个默认版本号
             
-        # 设置模板路径
+        # 设置 Python 路径
         if getattr(sys, 'frozen', False):
             # 如果是打包后的应用
             base_path = os.path.dirname(sys.executable)
             if 'Resources' not in base_path:
                 base_path = os.path.join(os.path.dirname(os.path.dirname(sys.executable)), 'Resources')
             
-            templates_path = os.path.join(base_path, 'fava/templates')
-            static_path = os.path.join(base_path, 'fava/static')
-            translations_path = os.path.join(base_path, 'fava/translations')
+            # 添加所需的包路径到 Python 路径
+            packages_path = base_path
+            if packages_path not in sys.path:
+                sys.path.insert(0, packages_path)
+                logging.info(f"Added {packages_path} to Python path")
+                
+            # 设置 fava 资源路径
+            fava_path = os.path.join(base_path, 'fava')
+            templates_path = os.path.join(fava_path, 'templates')
+            static_path = os.path.join(fava_path, 'static')
+            translations_path = os.path.join(fava_path, 'translations')
             
             # 检查所有资源目录
-            for path in [templates_path, static_path, translations_path]:
+            for path in [fava_path, templates_path, static_path, translations_path]:
                 if os.path.exists(path):
                     logging.info(f"Found resource directory: {path}")
                     if os.path.isdir(path):
@@ -87,6 +89,12 @@ def main():
         os.environ['FAVA_STATIC_PATH'] = static_path
         os.environ['FAVA_TRANSLATIONS_PATH'] = translations_path
         
+        # 在导入 fava 之前，先设置 __version__
+        import fava
+        if not hasattr(fava, '__version__'):
+            logging.info("Setting fava.__version__")
+            fava.__version__ = '1.0.0'  # 使用一个默认版本号
+            
         try:
             from fava.application import create_app
             logging.info("Successfully imported fava.application")

@@ -28,16 +28,16 @@
         "to": "example.beancount"
       },
       {
-        "from": "venv/lib/python3.9/site-packages/fava/templates",
-        "to": "fava/templates"
+        "from": "../src/fava",
+        "to": "fava"
       },
       {
-        "from": "venv/lib/python3.9/site-packages/fava/static",
-        "to": "fava/static"
+        "from": "venv/lib/python3.9/site-packages/beancount",
+        "to": "beancount"
       },
       {
-        "from": "venv/lib/python3.9/site-packages/fava/translations",
-        "to": "fava/translations"
+        "from": "venv/lib/python3.9/site-packages/pyexcel_io",
+        "to": "pyexcel_io"
       }
     ],
     "files": [
